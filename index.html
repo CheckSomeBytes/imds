@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMDS Credential Converter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Press Start 2P', monospace;
+    background: #13111a;
+    color: #d4d0e0;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    image-rendering: pixelated;
+  }
+
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    color: #a78bfa;
+    margin-bottom: 0.5rem;
+    text-shadow: 3px 3px 0 #3b1f7a;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    font-size: 0.7rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    color: #7dd3fc;
+    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 0 #0c3a5a;
+  }
+
+  textarea {
+    width: 100%;
+    height: 400px;
+    background: #1a1825;
+    color: #c4b5fd;
+    border: 3px solid #a78bfa;
+    box-shadow: 5px 5px 0 #2e1065;
+    padding: 1rem;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    line-height: 2;
+    resize: vertical;
+    outline: none;
+  }
+  textarea:focus {
+    border-color: #7dd3fc;
+    box-shadow: 5px 5px 0 #0c3a5a;
+  }
+  textarea::placeholder { color: #3a3550; }
+
+  #error {
+    color: #fb7185;
+    font-size: 0.7rem;
+    margin-top: 0.6rem;
+    min-height: 1.4em;
+    text-shadow: 1px 1px 0 #4a0020;
+  }
+
+  #expiration {
+    font-size: 0.7rem;
+    color: #fbbf24;
+    margin-top: 0.5rem;
+    min-height: 1.4em;
+    text-shadow: 1px 1px 0 #4a3000;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-top: 1.5rem;
+  }
+
+  .tab {
+    padding: 0.7rem 1.4rem;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.75rem;
+    background: #1a1825;
+    color: #555;
+    border: 3px solid #333;
+    border-bottom: none;
+    cursor: pointer;
+    transition: all 0.1s;
+    margin-right: -3px;
+    position: relative;
+  }
+  .tab:hover {
+    color: #a78bfa;
+    border-color: #a78bfa;
+  }
+  .tab.active {
+    background: #1e1b2e;
+    color: #a78bfa;
+    border-color: #a78bfa;
+    z-index: 1;
+    text-shadow: 0 0 10px #a78bfa44;
+  }
+
+  .tab-content {
+    display: none;
+    border: 3px solid #a78bfa;
+    border-top: none;
+    padding: 1.2rem;
+    background: #1e1b2e;
+    box-shadow: 5px 5px 0 #2e1065;
+  }
+  .tab-content.active { display: block; }
+
+  .output-area { display: none; }
+  .output-area.visible { display: block; }
+
+  .output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+  }
+  .output-header h2 {
+    font-size: 0.7rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .profile-row label {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .profile-input {
+    background: #13111a;
+    color: #c4b5fd;
+    border: 3px solid #a78bfa;
+    padding: 0.5rem 0.6rem;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    width: 220px;
+    outline: none;
+    box-shadow: 3px 3px 0 #2e1065;
+  }
+  .profile-input:focus {
+    border-color: #7dd3fc;
+    color: #7dd3fc;
+    box-shadow: 3px 3px 0 #0c3a5a;
+  }
+  .profile-input::placeholder { color: #3a3550; }
+
+  .copy-btn {
+    background: #13111a;
+    color: #a78bfa;
+    border: 3px solid #a78bfa;
+    padding: 0.45rem 1rem;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.1s;
+    box-shadow: 3px 3px 0 #2e1065;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .copy-btn:hover {
+    background: #a78bfa;
+    color: #13111a;
+    box-shadow: 0 0 0 #2e1065;
+    transform: translate(3px, 3px);
+  }
+  .copy-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+  }
+  .copy-btn.copied {
+    background: #34d399;
+    color: #13111a;
+    border-color: #34d399;
+    box-shadow: 0 0 12px #34d39944;
+  }
+
+  pre {
+    background: #13111a;
+    border: 3px solid #2a2740;
+    padding: 1rem;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.65rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 2.2;
+    color: #c4b5fd;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      #00000012 3px,
+      #00000012 6px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Blinking cursor effect on title */
+  h1::after {
+    content: '_';
+    color: #7dd3fc;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>IMDS CRED CONVERTER</h1>
+  <div class="subtitle">// PASTE. PARSE. PROFIT.</div>
+
+  <label for="input">&gt; INPUT IMDS JSON</label>
+  <textarea id="input" placeholder='{"AccessKeyId": "ASIA...", "SecretAccessKey": "...", "Token": "...", ...}' spellcheck="false"></textarea>
+  <div id="error"></div>
+  <div id="expiration"></div>
+
+  <div class="output-area" id="output-area">
+    <div class="tabs">
+      <button class="tab active" data-tab="cli" onclick="switchTab('cli')">AWS CLI</button>
+      <button class="tab" data-tab="env" onclick="switchTab('env')">ENV VARS</button>
+    </div>
+
+    <div class="tab-content active" id="tab-cli">
+      <div class="profile-row">
+        <label for="profile">&gt; Profile Name</label>
+        <input type="text" id="profile" class="profile-input" value="---" placeholder="profile-name" spellcheck="false">
+      </div>
+      <div class="output-header">
+        <h2>&gt; OUTPUT</h2>
+        <button class="copy-btn" onclick="copyBlock('cli-output', this)">COPY</button>
+      </div>
+      <pre id="cli-output"></pre>
+    </div>
+
+    <div class="tab-content" id="tab-env">
+      <div class="output-header">
+        <h2>&gt; OUTPUT</h2>
+        <button class="copy-btn" onclick="copyBlock('env-output', this)">COPY</button>
+      </div>
+      <pre id="env-output"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const input = document.getElementById('input');
+const profileInput = document.getElementById('profile');
+const errorEl = document.getElementById('error');
+const expirationEl = document.getElementById('expiration');
+const outputArea = document.getElementById('output-area');
+const cliOutput = document.getElementById('cli-output');
+const envOutput = document.getElementById('env-output');
+
+let parsed = null;
+
+input.addEventListener('input', convert);
+profileInput.addEventListener('input', renderOutputs);
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('tab-cli').classList.toggle('active', tab === 'cli');
+  document.getElementById('tab-env').classList.toggle('active', tab === 'env');
+}
+
+function extractField(text, key) {
+  const re = new RegExp('"' + key + '"\\s*:\\s*"([^"]*)"');
+  const m = text.match(re);
+  return m ? m[1] : null;
+}
+
+function convert() {
+  const raw = input.value.trim();
+  errorEl.textContent = '';
+  expirationEl.textContent = '';
+  parsed = null;
+  outputArea.classList.remove('visible');
+
+  if (!raw) return;
+
+  let accessKeyId, secretAccessKey, token, expiration;
+
+  try {
+    const obj = JSON.parse(raw);
+    accessKeyId = obj.AccessKeyId;
+    secretAccessKey = obj.SecretAccessKey;
+    token = obj.Token;
+    expiration = obj.Expiration;
+  } catch {
+    accessKeyId = extractField(raw, 'AccessKeyId');
+    secretAccessKey = extractField(raw, 'SecretAccessKey');
+    token = extractField(raw, 'Token');
+    expiration = extractField(raw, 'Expiration');
+  }
+
+  if (!accessKeyId || !secretAccessKey || !token) {
+    errorEl.textContent = '! ERROR: MISSING AccessKeyId, SecretAccessKey, OR Token';
+    return;
+  }
+
+  if (expiration) {
+    expirationEl.textContent = '! EXPIRES: ' + expiration;
+  }
+
+  parsed = { accessKeyId, secretAccessKey, token };
+  outputArea.classList.add('visible');
+  renderOutputs();
+}
+
+function renderOutputs() {
+  if (!parsed) return;
+  const { accessKeyId, secretAccessKey, token } = parsed;
+  const profile = profileInput.value || '---';
+
+  cliOutput.textContent = [
+    `aws configure set --profile ${profile} aws_access_key_id ${accessKeyId}`,
+    `aws configure set --profile ${profile} aws_secret_access_key ${secretAccessKey}`,
+    `aws configure set --profile ${profile} aws_session_token ${token}`
+  ].join('\n');
+
+  envOutput.textContent = [
+    `export AWS_ACCESS_KEY_ID=${accessKeyId}`,
+    `export AWS_SECRET_ACCESS_KEY=${secretAccessKey}`,
+    `export AWS_SESSION_TOKEN=${token}`
+  ].join('\n');
+}
+
+function copyBlock(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'COPY';
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+</script>
+</body>
+</html>
